@@ -20,17 +20,111 @@
 
 ### NLP的四大分类
 
-1. 序列标注：中文分词、词性标注、命名实体识别、语义角色标注。。。
-2. 分类任务：文本分类、情感计算。。。
-3. 句子关系判断：Entailment、QA、语义改写。。。
-4. 生成式任务：机器翻译、文本摘要、写诗造句、看图说话。。。
+1. 序列标注：中文分词、词性标注、命名实体识别、语义角色标注...
+2. 分类任务：文本分类、情感计算...
+3. 句子关系判断：Entailment、QA、语义改写...
+4. 生成式任务：机器翻译、文本摘要、写诗造句、看图说话...
 
 
-在介绍Bert如何改造下游任务之前，先大致说下NLP的几类问题，说这个是为了强调Bert的普适性有多强。通常而言，绝大部分NLP问题可以归入上面的四类任务中：**一类是序列标注**，这是最典型的NLP任务，比如中文分词、词性标注、命名实体识别、语义角色标注等都可以归入这一类问题，它的特点是句子中每个单词要求模型根据上下文都要给出一个分类类别。**第二类是分类任务**，比如我们常见的文本分类、情感计算等都可以归入这一类。它的特点是不管文章有多长，总体给出一个分类类别即可。**第三类任务是句子关系判断**，比如Entailment、QA、语义改写，自然语言推理等任务都是这个模式，它的特点是给定两个句子，模型判断出两个句子是否具备某种语义关系；**第四类是生成式任务**，比如机器翻译、文本摘要、写诗造句、看图说话等都属于这一类。它的特点是输入文本内容后，需要自主生成另外一段文字。
+在介绍Bert如何改造下游任务之前，先大致说下NLP的几类问题，说这个是为了强调Bert的普适性有多强。通常而言，绝大部分NLP问题可以归入上面的四类任务中：
+
+**一类是序列标注**，这是最典型的NLP任务，比如中文分词、词性标注、命名实体识别、语义角色标注等都可以归入这一类问题，它的特点是句子中每个单词要求模型根据上下文都要给出一个分类类别。
+
+**第二类是分类任务**，比如我们常见的文本分类、情感计算等都可以归入这一类。它的特点是不管文章有多长，总体给出一个分类类别即可。
+
+**第三类任务是句子关系判断**，比如Entailment、QA、语义改写，自然语言推理等任务都是这个模式，它的特点是给定两个句子，模型判断出两个句子是否具备某种语义关系。
+
+**第四类是生成式任务**，比如机器翻译、文本摘要、写诗造句、看图说话等都属于这一类。它的特点是输入文本内容后，需要自主生成另外一段文字。
 
 ![img](https://pic3.zhimg.com/80/v2-0245d07d9e227d1cb1091d96bf499032_720w.jpg)
 
 对于种类如此繁多而且各具特点的下游NLP任务，Bert如何改造输入输出部分使得大部分NLP任务都可以使用Bert预训练好的模型参数呢？上图给出示例，对于句子关系类任务，很简单，和GPT类似，加上一个起始和终结符号，句子之间加个分隔符即可。对于输出来说，把第一个起始符号对应的Transformer最后一层位置上面串接一个softmax分类层即可。对于分类问题，与GPT一样，只需要增加起始和终结符号，输出部分和句子关系判断任务类似改造；对于序列标注问题，输入部分和单句分类是一样的，只需要输出部分Transformer最后一层每个单词对应位置都进行分类即可。从这里可以看出，上面列出的NLP四大任务里面，除了生成类任务外，Bert其它都覆盖到了，而且改造起来很简单直观。尽管Bert论文没有提，但是稍微动动脑子就可以想到，其实对于机器翻译或者文本摘要，聊天机器人这种生成式任务，同样可以稍作改造即可引入Bert的预训练成果。只需要附着在S2S结构上，encoder部分是个深度Transformer结构，decoder部分也是个深度Transformer结构。根据任务选择不同的预训练数据初始化encoder和decoder即可。这是相当直观的一种改造方法。当然，也可以更简单一点，比如直接在单个Transformer结构上加装隐层产生输出也是可以的。不论如何，从这里可以看出，NLP四大类任务都可以比较方便地改造成Bert能够接受的方式。这其实是Bert的非常大的优点，这意味着它几乎可以做任何NLP的下游任务，具备普适性，这是很强的。
+
+##NLP预训练模型按照时间线有哪些
+
+1. ELMo（2018.3 华盛顿大学）
+   - 传统word2vec无法解决一次多义，语义信息不够丰富，诞生了**ELMo**
+2. GPT（2018.06 OpenAI）
+   - ELMo以LSTM堆积，串行且提取特征能力不够，诞生了**GPT**
+3. BERT（2018.10 Google）
+   - GPT虽然用transformer堆积，但是是单向的，诞生了**BERT**
+4. XLNet（2019.06 CMU+Google brain）
+   - BERT虽然双向，但是mask不适用于自编码模型，诞生了**XLNET**
+5. ERNIE（2019.4）
+   - BERT中mask代替单个字符而非实体或短语，没有考虑词法结构/语法结构，诞生了**ERNIE**
+6. BERT-wwm（2019.6.30 哈工大+讯飞）
+   - 为了mask掉中文的词而非字，让BERT更好的而应用在中文任务，诞生了**BERT-wwm**
+7. RoBERTa（2019.7.26 Facebook）
+   - Bert训练用更多的数据、训练步数、更大的批次，mask机制变为动态的，诞生了**RoBERTa**
+8. ERNIE2.0（2019.7.29 百度）
+   - ERNIE的基础上，用大量数据和先验知识，进行多任务的持续学习，诞生了**ERNIE2.0**
+9. BERT-wwm-ext（2019.7.30 哈工大+讯飞）
+   - BERT-wwm增加了训练数据集、训练步数，诞生了**BERT-wwm-ext**
+10. ALBERT（2019.10 Google）
+    - BERT的其他改进模型基本靠增加参数和训练数据，考虑轻量化之后，诞生了**ALBERT**
+
+
+
+[按时间线整理10种常见的预训练模型](https://zhuanlan.zhihu.com/p/210077100)
+
+
+
+## NNLM
+
+语言模型：
+
+$$P(S) = P(w_1, w_2, ..., w_n)$$
+
+$$P(w_1, w_2, ..., w_n) = P(w_1)P(w_2|w_1)P(w_3|w_1, w_2)...P(w_n|w_1, w_2,...w_{n-1})$$
+
+$$L = \sum\limits_{w \in C}logP(w|context(w))$$
+
+核心函数P的思想是根据句子里面前面的一系列前导单词预测后面跟哪个单词的概率大小，当预料中词典大小为100000，句子平均长度为5时，需要学习的参考大概100000*5-1个，为了降低计算复杂度，并考虑到词序列中离的更近的词通常在语义上也更相关，所以在计算时可以通过只使用n-1个词来近似计算，即n-grams：$$\hat{P}\left(W_1^T \right) = \prod_{t=1}^T\hat{P}\left(w_t \mid w_1^{t-1} \right)$$
+
+n-grams存在的问题：
+
+1. 泛化时常常有训练语料中没有出现过的词序列
+2. 没有考虑词之间的相似性
+
+NNLM：
+
+1. 对词库里的每个词指定一个分布的词向量
+2. 定义联合概率（国通序列中词对应的词向量）
+3. 学习词向量和概率函数的参数
+
+
+
+<u>众所周知，传统的模型预训练手段就是语言模型，比如ELMo模型就是以BiLSTM为基础架构、用两个方向的语言模型分别预训练两个方向的LSTM的，后面的OpenAI的GPT、GPT-2也是坚定不移地坚持着用祖传的（标准的、单向的）语言模型来预训练。</u>
+
+然而，还有更多花样的预训练玩法。比如Bert就用了称之为“掩码语言模型（Masked Language Model）”的方式来预训练，
+
+## Word2Vec
+
+
+
+## Doc2Vec
+
+
+
+## fastText
+
+fastText涉及两个领域：一是使用fastText进行文本分类；二是使用fastText训练词向量
+
+- fastText用作文本分类，做到了速度和精读的一个平衡：标准多核CPU情况下，不到十分钟，可以训练超过十亿个单词。不到一分钟，可以对50万个句子在312千个类别中进行分类。fastText的文本分类使用模型是CBOW的变种。
+
+## ELMo
+
+## Attention
+
+**背景：**之前在做机器翻译Neural Machine Translation(NMT)模型中，通常的配置是Encoder-Decoder结构，encoder
+
+$$\boldsymbol{X} \in \mathbb{R}^{n \times d}$$
+
+Attention的数学形式为：
+
+$$\begin{equation}Attention(\boldsymbol{Q},\boldsymbol{K},\boldsymbol{V}) = softmax\left(\frac{\boldsymbol{Q}\boldsymbol{K}^{\top}}{\sqrt{d_k}}\right)\boldsymbol{V}\end{equation}$$
+
+为了解决序列到序列模型记忆长序列能力不足的问题，一个非常直观的想法是，当要生成一个目标语言单词时，不光考虑前一个时刻的状态和已经生成的单词，还考虑当前要生成的单词和源语言句子的哪些单词更相关，即更关注源语言的哪些词，这种做法就是注意力机制。
 
 ## Self-Attention
 
@@ -39,76 +133,63 @@
 - Batch Norm: 同一个dimension不同example不同feature去计算mean和standard deviation
 - NotImplementedError: Cannot convert a symbolic Tensor (strided_slice_6:0) to a numpy array. This error may indicate that you're trying to pass a Tensor to a NumPy call, which is not supported
 
-### Bert在文本多分类任务的使用
+**Attention和Self-Attention的区别**
 
-Bert的全称：**Bidirectional Encoder Representations from Transformers**。现在对于Bert 的使用和衍生变种很多，比如：[Bert as service](https://github.com/hanxiao/bert-as-service)(可部署在服务器上，方便快捷版的Bert)、[Bert-NER](https://github.com/kyzhouhzau/BERT-NER)（用来做实体识别）、[Bert-utils](https://gitee.com/zengyy8/bert-utils)（句向量的引入）等等
+注意力机制的本质就是给予权重。Attention的权重是输入向量与输出向量之间的权重对应关系，Self-Attention的权重是输入向量内部之间的权重关系。
 
-假设你已经明确你有一个文本多分类的问题，第一步就是收集分类的手段，而不要考虑文本，这样做的好处一会再说。把问题拆解开来，分类手段有啥？决策树、朴素贝叶斯、SVM、高级点的LightGBM、神经网络等都可以，把它们记录下来，熟悉它们的使用方法（输入输出很重要），适应的范围和优缺点，原理的话，学有余力你可以学习。最快的方法是找代码直接看直接调通。
+self-attention与普通attention的区别就是Q的不同，Q使用的是encoder的隐状态，而普通的attention使用的decoder的隐状态。常见的Cross Attention和Self Attention的区别就是Q的不同，但从最一般的角度来说，Q、K、V都可以有所不同。
 
-文本编码有啥方法呀？词袋模型，one-hot模型，TF-IDF方法，word2vec等，当然，你肯定还会看到Bert的身影，你把每种方法的实现、优缺点等搞懂，你就知道适合你的任务的编码方式是啥了。
+其实Self Attention直接理解成引入了输入的两两交叉特征。
 
-很神奇吧，你现在知道文本的编码有那么多、分类的方法有那么多，即便筛选掉那些你觉得肯定对你任务不合适的方法，这样排列组合的形式还是有很多。那么对任务上下游方法进行搭配就很重要了。谁也不会知道那个效果好，那就多搭配搭配试一试，比较各个模型组合起来的效果。对于分类问题比较好的衡量标准就是F-Score和准确率，一般来说准确率用的可能要多一些。但是在竞赛中F-Score是更为常见的。
+## 自回归(AR)和自编码(AE)
 
-（1）基于概率模型的朴素贝叶斯分类器：朴素贝叶斯分类器是一系列以假设特征之间强（朴素）独立下运用贝叶斯定理为基础的简单概率分类器。优点在于数据集较小的情况下的仍旧可以处理多类别问题使用于标称数据。面对Bert生成的序列向量，朴素贝叶斯并没有很好的处理能力，主要原因是：其一，Bert生成向量的各维度是连续属性；其二，Bert生成向量各个维度并不是完全独立的。因此这种分类方法在原理上来讲不会具有很好的分类效果；
-（2）基于网络结构的SVM分类方法：支持向量机的思想来源于感知机，是一种简单的浅层神经网络。但SVM较一般的神经网络具有更好的解释性和更完美的数学理论支撑。SVM的目的在于寻求划分各类的超平面。当然，支持向量机可实现非线性分类，利用核函数将数据抽象到更高维的空间，进而将非线性问题转换为线性问题；
-（3）基于树模型的LightGBM分类器：LightGBM是对一般决策树模型和梯度提升决策树模型XGBoost的一种改进。内部使用Histogram的决策树算法和带有深度限制的Leaf-wise的叶子生长策略，主要优势在于更快的训练效率、低内存占用以及适用大规模并行化数据处理。
+- **自回归**是时间序列分析或者信号处理领域喜欢用的一个术语，理解成语言模型就好了。一个句子的生成过程如下：首先根据概率分布生成第一个词，然后根据第一个词生成第二个词，然后根据前两个词生成第三个词，以此类推直到生成整个句子。
+- **自编码**是一种无监督学习输入的特征方法：用一个神经网络输入变成一个低纬的特征，这是编码部分。然后再用一个Decoder尝试把特征恢复成原始的信号。例如，Bert看成一种AutoEncoder，它通过Mask改变了部分Token，然后试图通过其上下文的其他Token来恢复这些被Mask的Token。
 
-### ELMo模型介绍
-
-[按时间线整理10种常见的预训练模型](https://zhuanlan.zhihu.com/p/210077100)
-
-[RNN和LSTM](https://blog.csdn.net/zhaojc1995/article/details/80572098)
+## Transformer
 
 [深入理解transformer源码](https://blog.csdn.net/zhaojc1995/article/details/109276945)
 
-很多研究已经证明了Transformer提取特征的能力是要远强于LSTM的。
+### Transformer结构
 
-### Seq2Seq模型
+Transformer是一个升级版的seq2seq，也是由一个encoder和一个decoder组成的，encoder对输入序列进行编码，即x变成h，decoder对h进行编码，得到y，但encoder和decoder都不用RNN，二是换成了多个attention。
 
-#### 1. Seq2Seq模型简介
+![](D:\vscode\bert-pics\transformer结构图.png)
 
-- Seq2Seq模型是RNN最重要的一个变种：N vs M（输入与输出序列长度不同），原始的N vs N要求序列等长，然后我们遇到的大部分问题序列都是不等长的，如机器翻译中，源语言和目标语言的句子往往并没有相同的长度。
+![](D:\vscode\bert-pics\草稿上的transformer.png)
 
-- Seq2Seq模型是输出的长度不确定时采用的模型，这种情况一般是在机器翻译的任务中出现，讲一句中文翻译成英文，那么这句英文的长度有可能会比中文短，也有可能比中文长，所以输出的长度就不确定了。如下图所示，输入的中文长度为4，输出的英文长度为2.
+对上面的结构进行分开来看：
 
-  ![](D:\vscode\seq2seq.png)
+1. 左边的结构是Encoder、右边是Decoder
+2. Encoder、Decoder的底部都是embedding，而embedding又分为两部分：input embedding和position embedding，Transformer抛弃了RNN，而RNN最大的优点就是在时间序列上对数据的抽象，所以文章中作者提出两种Positional Encoding的方法，将Encoding后的数据与embedding数据求和，加入了相对位置信息。
+3. Encoder、Decoder的中部分是两个block，分别输入一个序列、输出一个序列，这两个block分别重复N次，Encoder的每个block里有两个子网，分别是multihead attention和feedforward network(ffn)；Decoder的block里有三个子网，分别是multihead attention和一个ffn。这些子网后面都跟了一个add&norm，即像resnet一样加一个。
+4. decoder最后还有一个linear和softmax。
 
-- 在网络结构中，输入一个中文序列，然后输出它对应的中文翻译，输出的部分的结果预测后面，根据上面的例子，也就是先输出“machine”，将"machine"作为下一次的输入，接着输出"learning",这样就能输出任意长的序列。机器翻译、人机对话、聊天机器人等等，这些都是应用在当今社会都或多或少的运用到了我们这里所说的Seq2Seq。
+#### 1 Encoder
 
-#### 2. Seq2Seq结构
+Encoder由6层相同的层组成，每一层由两部分组成；`multi-head、self-attention`和`position-wise、feed-forward network（是一个全连接层）`，两个部分都有一个残差链接(residual connection)，然后接着一个layer normalization。
 
-- Seq2Seq属于Encoder-Decoder结构的一种，基本上就是利用两个RNN，一个RNN作为Encoder，另一个RNN作为Decoder。**Encoder负责将输入序列压缩成指定长度的向量，**这个向量就可以看成是这个序列的语义，这个过程称为编码，**获取语义向量最简单的方式就是直接将最后一个输入的隐状态作为语义向量c**。也可以对最后一个隐含状态做一个变换得到语义向量，还可以将输入序列的所有隐含状态做一个变换得到语义变量。
+#### 2 Decoder
 
-  ![语义向量只作初始化参数参与运算](D:\vscode\RNN网络.png)
+Decoder也是由6个相同的层组成，每一个层包括三个部分：`multi-head,self-attention, mechanism`和`multi-head,context-attention,mechanism`和`position-wise,feed-forward network`，和Encoder一样，上面三个部分的每一个部分，都有一个残差连接，后接一个Layer Normalization。
 
-- 而**decoder则负责根据语义向量生成指定的序列**，这个过程也称为解码，如下图，最简单的方式是将encoder得到的语义变量作为初始状态输入到decoder的RNN中，得到输出序列。可以看到上一时刻的输出会作为当前时刻的输入，而且其中语义向量C只作为初始状态参与运算，后面的运算都与语义向量C无关。
+Encoder和Decoder不同的地方在multi-head context-attention mechanism
 
-  ![](D:\vscode\语义向量只作初始化参数参与运算.png)
+#### 3 Attention
 
-- decoder处理方式还有另外一种，就是语义向量C参与了序列所有时刻的运算，如下图，上一时刻的输出仍然作为当前时刻的输入，但语义向量C会参与所有时刻的运算。
+attention可以简单理解成encoder层的输出经过加权平均后再输入到decoder层中，它主要应用在seq2seq模型中，这个加权可以用矩阵来表示，也叫attention矩阵，它表示对于某一个时刻的输出y，它扎起输入y上各个部分的注意力，这个注意力就是刚才所说的加权，Attention 又分为很多种，其中两种比较典型的有加性 Attention 和乘性 Attention。加性 Attention 对于输入的隐状态 h_t 和输出的隐状态 s_t 直接做 concat 操作，得到 [s_t; h_t] ，乘性 Attention 则是对输入和输出做 dot 操作。
 
-  ![语义向量参与解码的每一个过程](D:\vscode\语义向量参与解码的每一个过程.png)
+#### 4 Transformer评价
 
-#### 3. 训练Seq2Seq模型
+1. 并行计算，提高训练速度
+   Transoformer用attention代替了原本的RNN，而RNN在训练的时候，当前的step的计算要依赖于上一个step的hidden state的，也就是说这是一个sequential procedure，即每次计算都要等之前的计算完成才能展开，而Transoformer不用RNN，所有的计算都可以并行计算，从而提高训练的速度
 
-​
+2. 建立直接的长距离依赖
+   在Transoformer中，由于self attentionn的存在，任意两个word之间都有直接的交互，从而建立了直接的依赖，无论二者距离多远
 
-#### 4. Seq2Seq的应用
+   ​
 
-> 由于这种Encoder-Encoder结构不限制输入和输出的序列长度，因此应用的范围非常广泛，比如
-
-- **机器翻译：**Encoder-Decoder的最经典应用，实际上这一结构就是在机器翻译领域最先提出的
-- **文本摘要：**输入是一段文本序列，输出是这段文本序列的摘要序列。
-- **阅读理解：**将输入的文章和问题分别编码，再对其进行编码得到问题的答案。
-- **语音识别：**输入是语音信号序列，输出是文字序列。
-
-
-
-**Automated Template Generation for Question Answering over Knowledge Graphs**
-
-
-
-## Transformer的20个问题
+### 20个QA
 
 1. Transformer为何使用多头注意力机制？（为什么不使用一个头）
 
@@ -160,7 +241,6 @@ Bert的全称：**Bidirectional Encoder Representations from Transformers**。�
 
 20. 引申一个关于bert问题，bert的mask为何不学习transformer在attention处进行屏蔽score的技巧？
 
-
 Tensor2Tensor
 
 Transformer的编码器层有：Self-Attention、Add&Normal、Feed-Forward前馈层
@@ -201,128 +281,39 @@ class PositionalEncoding(nn.Module):
         return self.dropout(x) # size = [batch, L, d_model]
 ```
 
+一下总结：
+
+NLP句子中长距离依赖特征的问题，self-attention天然就能解决这个问题，因为在集成信息的时候当前单词和句子中任意单词都能发生联系，所以一步到位就能把这个事情做掉了，不像RNN需要通过隐层节点序列往后传，也不像CNN需要通过增加网络深度来捕获远距离特征。
 
 
 
-## Transformer和Bert
+## Bert
 
-### 一、NLP预训练模型按照时间线有哪些？
+### Bert在文本多分类任务的使用
 
-1. ELMO（2018.3 华盛顿大学）
-   - 传统word2vec无法解决一次多义，语义信息不够丰富，诞生了**ELMO**
-2. GPT（2018.06 OpenAI）
-   - ELMO以LSTM堆积，串行且提取特征能力不够，诞生了**GPT**
-3. BERT（2018.10 Google）
-   - GPT虽然用transformer堆积，但是是单向的，诞生了**BERT**
-4. XLNet（2019.06 CMU+Google brain）
-   - BERT虽然双向，但是mask不适用于自编码模型，诞生了**XLNET**
-5. ERNIE（2019.4）
-   - BERT中mask代替单个字符而非实体或短语，没有考虑词法结构/语法结构，诞生了**ERNIE**
-6. BERT-wwm（2019.6.30 哈工大+讯飞）
-   - 为了mask掉中文的词而非字，让BERT更好的而应用在中文任务，诞生了**BERT-wwm**
-7. RoBERTa（2019.7.26 Facebook）
-   - Bert训练用更多的数据、训练步数、更大的批次，mask机制变为动态的，诞生了**RoBERTa**
-8. ERNIE2.0（2019.7.29 百度）
-   - ERNIE的基础上，用大量数据和先验知识，进行多任务的持续学习，诞生了**ERNIE2.0**
-9. BERT-wwm-ext（2019.7.30 哈工大+讯飞）
-   - BERT-wwm增加了训练数据集、训练步数，诞生了**BERT-wwm-ext**
-10. ALBERT（2019.10 Google）
-    - BERT的其他改进模型基本靠增加参数和训练数据，考虑轻量化之后，诞生了**ALBERT**
+Bert的全称：**Bidirectional Encoder Representations from Transformers**。现在对于Bert 的使用和衍生变种很多，比如：[Bert as service](https://github.com/hanxiao/bert-as-service)(可部署在服务器上，方便快捷版的Bert)、[Bert-NER](https://github.com/kyzhouhzau/BERT-NER)（用来做实体识别）、[Bert-utils](https://gitee.com/zengyy8/bert-utils)（句向量的引入）等等
 
-### 二、Transformer的三者关系
+假设你已经明确你有一个文本多分类的问题，第一步就是收集分类的手段，而不要考虑文本，这样做的好处一会再说。把问题拆解开来，分类手段有啥？决策树、朴素贝叶斯、SVM、高级点的LightGBM、神经网络等都可以，把它们记录下来，熟悉它们的使用方法（输入输出很重要），适应的范围和优缺点，原理的话，学有余力你可以学习。最快的方法是找代码直接看直接调通。
 
-**transformers、pytorch-transformers、pytorch-pretrained-bert三者的关系**
+文本编码有啥方法呀？词袋模型，one-hot模型，TF-IDF方法，word2vec等，当然，你肯定还会看到Bert的身影，你把每种方法的实现、优缺点等搞懂，你就知道适合你的任务的编码方式是啥了。
 
-`transformers`包也叫`pytorch-transformers`或者`pytorch-pretrained-bert`，实际上transformers库是最新的版本（以前称为pytorch-transformers和pytorch-pretrained-bert），所以它在前两者的基础上对一些函数与方法进行了改进，包括一些函数可能只有在transformers库里才能使用，因此使用transformers库比较方便。它提供了一些列的STOA模型的实现，包括(Bert、XLNet、RoBERTa等)。
+你现在知道文本的编码有那么多、分类的方法有那么多，即便筛选掉那些你觉得肯定对你任务不合适的方法，这样排列组合的形式还是有很多。那么对任务上下游方法进行搭配就很重要了。谁也不会知道那个效果好，那就多搭配搭配试一试，比较各个模型组合起来的效果。对于分类问题比较好的衡量标准就是F-Score和准确率，一般来说准确率用的可能要多一些。但是在竞赛中F-Score是更为常见的。
 
-### 三、安装transformer库
-**pip install transformer**
+（1）基于概率模型的朴素贝叶斯分类器：朴素贝叶斯分类器是一系列以假设特征之间强（朴素）独立下运用贝叶斯定理为基础的简单概率分类器。优点在于数据集较小的情况下的仍旧可以处理多类别问题使用于标称数据。面对Bert生成的序列向量，朴素贝叶斯并没有很好的处理能力，主要原因是：其一，Bert生成向量的各维度是连续属性；其二，Bert生成向量各个维度并不是完全独立的。因此这种分类方法在原理上来讲不会具有很好的分类效果；
+（2）基于网络结构的SVM分类方法：支持向量机的思想来源于感知机，是一种简单的浅层神经网络。但SVM较一般的神经网络具有更好的解释性和更完美的数学理论支撑。SVM的目的在于寻求划分各类的超平面。当然，支持向量机可实现非线性分类，利用核函数将数据抽象到更高维的空间，进而将非线性问题转换为线性问题；
+（3）基于树模型的LightGBM分类器：LightGBM是对一般决策树模型和梯度提升决策树模型XGBoost的一种改进。内部使用Histogram的决策树算法和带有深度限制的Leaf-wise的叶子生长策略，主要优势在于更快的训练效率、低内存占用以及适用大规模并行化数据处理。
 
-### 四、Bert的模型有哪些？在哪里？
-- 在使用transformers的时候，由于Bert的文件都在AWS上存储，transformers的默认下载地址指向的是AWS，因此在国内下载速度非常慢。需要手动下载。
-  
-模型的bin文件下载
-```
-BERT_PRETRAINED_MODEL_ARCHIVE_MAP = {
-    'bert-base-uncased': "https://s3.amazonaws.com/models.huggingface.co/bert/bert-base-uncased-pytorch_model.bin",
-    'bert-large-uncased': "https://s3.amazonaws.com/models.huggingface.co/bert/bert-large-uncased-pytorch_model.bin",
-    'bert-base-cased': "https://s3.amazonaws.com/models.huggingface.co/bert/bert-base-cased-pytorch_model.bin",
-    'bert-large-cased': "https://s3.amazonaws.com/models.huggingface.co/bert/bert-large-cased-pytorch_model.bin",
-    'bert-base-multilingual-uncased': "https://s3.amazonaws.com/models.huggingface.co/bert/bert-base-multilingual-uncased-pytorch_model.bin",
-    'bert-base-multilingual-cased': "https://s3.amazonaws.com/models.huggingface.co/bert/bert-base-multilingual-cased-pytorch_model.bin",
-    'bert-base-chinese': "https://s3.amazonaws.com/models.huggingface.co/bert/bert-base-chinese-pytorch_model.bin",
-    'bert-base-german-cased': "https://s3.amazonaws.com/models.huggingface.co/bert/bert-base-german-cased-pytorch_model.bin",
-    'bert-large-uncased-whole-word-masking': "https://s3.amazonaws.com/models.huggingface.co/bert/bert-large-uncased-whole-word-masking-pytorch_model.bin",
-    'bert-large-cased-whole-word-masking': "https://s3.amazonaws.com/models.huggingface.co/bert/bert-large-cased-whole-word-masking-pytorch_model.bin",
-    'bert-large-uncased-whole-word-masking-finetuned-squad': "https://s3.amazonaws.com/models.huggingface.co/bert/bert-large-uncased-whole-word-masking-finetuned-squad-pytorch_model.bin",
-    'bert-large-cased-whole-word-masking-finetuned-squad': "https://s3.amazonaws.com/models.huggingface.co/bert/bert-large-cased-whole-word-masking-finetuned-squad-pytorch_model.bin",
-    'bert-base-cased-finetuned-mrpc': "https://s3.amazonaws.com/models.huggingface.co/bert/bert-base-cased-finetuned-mrpc-pytorch_model.bin",
-    'bert-base-german-dbmdz-cased': "https://s3.amazonaws.com/models.huggingface.co/bert/bert-base-german-dbmdz-cased-pytorch_model.bin",
-    'bert-base-german-dbmdz-uncased': "https://s3.amazonaws.com/models.huggingface.co/bert/bert-base-german-dbmdz-uncased-pytorch_model.bin",
-}
+- BERT和Transformer两者间是什么关系？
 
-```
+Transformer是特征抽取器，和CNN、RNN并列用于特征抽取的一种深层级网络结构，而BERT可视为一种两阶段的处理流程，这个流程使用的框架便是Transformer，再简单解释，你可以理解为BERT利用Transformer学会如何编码、存储信息知识。这是两者的关系。
 
-模型的json文件下载
+在Transformer和BERT 之前，大家最常用的是CNN、RNN、Encoder-Decoder三大技术，覆盖了NLP领域80%的技术与应用，Transformer和BERT比它们好在哪里？每层网络学到了什么？多学了哪些知识？这些问题都是我一直在思考的，想在今天和大家分享一下目前的一些研究结论。
 
-```
-BERT_PRETRAINED_CONFIG_ARCHIVE_MAP = {
-    'bert-base-uncased': "https://s3.amazonaws.com/models.huggingface.co/bert/bert-base-uncased-config.json",
-    'bert-large-uncased': "https://s3.amazonaws.com/models.huggingface.co/bert/bert-large-uncased-config.json",
-    'bert-base-cased': "https://s3.amazonaws.com/models.huggingface.co/bert/bert-base-cased-config.json",
-    'bert-large-cased': "https://s3.amazonaws.com/models.huggingface.co/bert/bert-large-cased-config.json",
-    'bert-base-multilingual-uncased': "https://s3.amazonaws.com/models.huggingface.co/bert/bert-base-multilingual-uncased-config.json",
-    'bert-base-multilingual-cased': "https://s3.amazonaws.com/models.huggingface.co/bert/bert-base-multilingual-cased-config.json",
-    'bert-base-chinese': "https://s3.amazonaws.com/models.huggingface.co/bert/bert-base-chinese-config.json",
-    'bert-base-german-cased': "https://s3.amazonaws.com/models.huggingface.co/bert/bert-base-german-cased-config.json",
-    'bert-large-uncased-whole-word-masking': "https://s3.amazonaws.com/models.huggingface.co/bert/bert-large-uncased-whole-word-masking-config.json",
-    'bert-large-cased-whole-word-masking': "https://s3.amazonaws.com/models.huggingface.co/bert/bert-large-cased-whole-word-masking-config.json",
-    'bert-large-uncased-whole-word-masking-finetuned-squad': "https://s3.amazonaws.com/models.huggingface.co/bert/bert-large-uncased-whole-word-masking-finetuned-squad-config.json",
-    'bert-large-cased-whole-word-masking-finetuned-squad': "https://s3.amazonaws.com/models.huggingface.co/bert/bert-large-cased-whole-word-masking-finetuned-squad-config.json",
-    'bert-base-cased-finetuned-mrpc': "https://s3.amazonaws.com/models.huggingface.co/bert/bert-base-cased-finetuned-mrpc-config.json",
-    'bert-base-german-dbmdz-cased': "https://s3.amazonaws.com/models.huggingface.co/bert/bert-base-german-dbmdz-cased-config.json",
-    'bert-base-german-dbmdz-uncased': "https://s3.amazonaws.com/models.huggingface.co/bert/bert-base-german-dbmdz-uncased-config.json",
-}
-```
 
-模型的词表文件下载:
-
-```
-PRETRAINED_VOCAB_FILES_MAP = {
-    'vocab_file':
-    {
-        'bert-base-uncased': "https://s3.amazonaws.com/models.huggingface.co/bert/bert-base-uncased-vocab.txt",
-        'bert-large-uncased': "https://s3.amazonaws.com/models.huggingface.co/bert/bert-large-uncased-vocab.txt",
-        'bert-base-cased': "https://s3.amazonaws.com/models.huggingface.co/bert/bert-base-cased-vocab.txt",
-        'bert-large-cased': "https://s3.amazonaws.com/models.huggingface.co/bert/bert-large-cased-vocab.txt",
-        'bert-base-multilingual-uncased': "https://s3.amazonaws.com/models.huggingface.co/bert/bert-base-multilingual-uncased-vocab.txt",
-        'bert-base-multilingual-cased': "https://s3.amazonaws.com/models.huggingface.co/bert/bert-base-multilingual-cased-vocab.txt",
-        'bert-base-chinese': "https://s3.amazonaws.com/models.huggingface.co/bert/bert-base-chinese-vocab.txt",
-        'bert-base-german-cased': "https://int-deepset-models-bert.s3.eu-central-1.amazonaws.com/pytorch/bert-base-german-cased-vocab.txt",
-        'bert-large-uncased-whole-word-masking': "https://s3.amazonaws.com/models.huggingface.co/bert/bert-large-uncased-whole-word-masking-vocab.txt",
-        'bert-large-cased-whole-word-masking': "https://s3.amazonaws.com/models.huggingface.co/bert/bert-large-cased-whole-word-masking-vocab.txt",
-        'bert-large-uncased-whole-word-masking-finetuned-squad': "https://s3.amazonaws.com/models.huggingface.co/bert/bert-large-uncased-whole-word-masking-finetuned-squad-vocab.txt",
-        'bert-large-cased-whole-word-masking-finetuned-squad': "https://s3.amazonaws.com/models.huggingface.co/bert/bert-large-cased-whole-word-masking-finetuned-squad-vocab.txt",
-        'bert-base-cased-finetuned-mrpc': "https://s3.amazonaws.com/models.huggingface.co/bert/bert-base-cased-finetuned-mrpc-vocab.txt",
-        'bert-base-german-dbmdz-cased': "https://s3.amazonaws.com/models.huggingface.co/bert/bert-base-german-dbmdz-cased-vocab.txt",
-        'bert-base-german-dbmdz-uncased': "https://s3.amazonaws.com/models.huggingface.co/bert/bert-base-german-dbmdz-uncased-vocab.txt",
-    }
-}
-```
-
-`transformers的模型下载默认在~/.cache/torch/transformers/中！`
-
-### 五、Bert和Transformer的QA
-
-1. BERT和Transformer两者间是什么关系？
-
-   Transformer是特征抽取器，和CNN、RNN并列用于特征抽取的一种深层级网络结构，而BERT可视为一种两阶段的处理流程，这个流程使用的框架便是Transformer，再简单解释，你可以理解为BERT利用Transformer学会如何编码、存储信息知识。这是两者的关系。
-
-   在Transformer和BERT 之前，大家最常用的是CNN、RNN、Encoder-Decoder三大技术，覆盖了NLP领域80%的技术与应用，Transformer和BERT比它们好在哪里？每层网络学到了什么？多学了哪些知识？这些问题都是我一直在思考的，想在今天和大家分享一下目前的一些研究结论。
-
-## BERT详解
 
 ### 视频讲解目录
+
+> 在b站上看的一个，顺便做了一些记录
 
 1. Bert整体模型架构
 2. 如何做预训练：MLM+NSP
@@ -382,7 +373,7 @@ for index in mask_indices:
 
 
 
----
+------
 
 > NSP任务详解
 
@@ -437,19 +428,15 @@ for index in mask_indices:
 4. Weight decay修改后的Adam，使用warmup，搭配线性衰减
 5. 数据增强、自蒸馏、外部知识的融入
 
-
-
 #### 4. 代码解析
 
 [Pytorch微调Bert代码做文本分类](https://github.com/DA-southampton/Read_Bert_Code)
 
-【一些问题】
 
-1. ​
 
 ## BERT的通俗理解
 
-###1.预训练模型
+### 1.预训练模型
 
 ​	BERT是一个预训练的模型，那么什么是预训练呢？举例子进行简单的介绍
 
@@ -468,7 +455,6 @@ for index in mask_indices:
   2. 预训练上下文编码器。这个阶段基于上下文动态学习embedding和encoding。典型例子为ELMO、GPT、BERT。
 - 预训练任务
   - 目前大部分都是基于监督学习来构建的，又分为基于上下文学习和对比学习两类
-
 
 #### Task #1：Masked LM
 
@@ -563,13 +549,13 @@ BERT最主要的组成部分便是，词向量(token embeddings)、段向量(seg
 
 从这里可以看出，上面列出的NLP四大任务里面，除了生成类任务外，Bert其它都覆盖到了，而且改造起来很简单直观。可观看这篇精彩文章  [从Word Embedding到Bert模型—自然语言处理中的预训练技术发展史](https://zhuanlan.zhihu.com/p/49271699)
 
-###5.模型的评价
+### 5.模型的评价
 
-####优点
+#### 优点
 
 BERT是截止至2018年10月的最新的的state of the art模型，通过预训练和精调可以解决11项NLP的任务。使用的是Transformer，相对于rnn而言更加高效、能捕捉更长距离的依赖。与之前的预训练模型相比，它捕捉到的是真正意义上的bidirectional context信息
 
-####缺点
+#### 缺点
 
 作者在文中主要提到的就是MLM预训练时的mask问题：
 
@@ -578,6 +564,54 @@ BERT是截止至2018年10月的最新的的state of the art模型，通过预训
 
 
 
+
+
+## RNN、LSTM、GRU
+
+[RNN和LSTM](https://blog.csdn.net/zhaojc1995/article/details/80572098)
+
+### Seq2Seq模型
+
+#### 1. Seq2Seq模型简介
+
+- Seq2Seq模型是RNN最重要的一个变种：N vs M（输入与输出序列长度不同），原始的N vs N要求序列等长，然后我们遇到的大部分问题序列都是不等长的，如机器翻译中，源语言和目标语言的句子往往并没有相同的长度。
+
+- Seq2Seq模型是输出的长度不确定时采用的模型，这种情况一般是在机器翻译的任务中出现，讲一句中文翻译成英文，那么这句英文的长度有可能会比中文短，也有可能比中文长，所以输出的长度就不确定了。如下图所示，输入的中文长度为4，输出的英文长度为2.
+
+  ![](D:\vscode\seq2seq.png)
+
+- 在网络结构中，输入一个中文序列，然后输出它对应的中文翻译，输出的部分的结果预测后面，根据上面的例子，也就是先输出“machine”，将"machine"作为下一次的输入，接着输出"learning",这样就能输出任意长的序列。机器翻译、人机对话、聊天机器人等等，这些都是应用在当今社会都或多或少的运用到了我们这里所说的Seq2Seq。
+
+#### 2. Seq2Seq结构
+
+- Seq2Seq属于Encoder-Decoder结构的一种，基本上就是利用两个RNN，一个RNN作为Encoder，另一个RNN作为Decoder。**Encoder负责将输入序列压缩成指定长度的向量，**这个向量就可以看成是这个序列的语义，这个过程称为编码，**获取语义向量最简单的方式就是直接将最后一个输入的隐状态作为语义向量c**。也可以对最后一个隐含状态做一个变换得到语义向量，还可以将输入序列的所有隐含状态做一个变换得到语义变量。
+
+  ![语义向量只作初始化参数参与运算](D:\vscode\RNN网络.png)
+
+- 而**decoder则负责根据语义向量生成指定的序列**，这个过程也称为解码，如下图，最简单的方式是将encoder得到的语义变量作为初始状态输入到decoder的RNN中，得到输出序列。可以看到上一时刻的输出会作为当前时刻的输入，而且其中语义向量C只作为初始状态参与运算，后面的运算都与语义向量C无关。
+
+  ![](D:\vscode\语义向量只作初始化参数参与运算.png)
+
+- decoder处理方式还有另外一种，就是语义向量C参与了序列所有时刻的运算，如下图，上一时刻的输出仍然作为当前时刻的输入，但语义向量C会参与所有时刻的运算。
+
+  ![语义向量参与解码的每一个过程](D:\vscode\语义向量参与解码的每一个过程.png)
+
+#### 3. 训练Seq2Seq模型
+
+​
+
+#### 4. Seq2Seq的应用
+
+> 由于这种Encoder-Encoder结构不限制输入和输出的序列长度，因此应用的范围非常广泛，比如
+
+- **机器翻译：**Encoder-Decoder的最经典应用，实际上这一结构就是在机器翻译领域最先提出的
+- **文本摘要：**输入是一段文本序列，输出是这段文本序列的摘要序列。
+- **阅读理解：**将输入的文章和问题分别编码，再对其进行编码得到问题的答案。
+- **语音识别：**输入是语音信号序列，输出是文字序列。
+
+
+
+**Automated Template Generation for Question Answering over Knowledge Graphs**
 
 
 
@@ -593,57 +627,6 @@ BERT是截止至2018年10月的最新的的state of the art模型，通过预训
 
 为了解决“这个函数是什么”的问题，可以有多种想法，比如我们已经学过了泰勒级数，知道一般的非线性函数都能通过泰勒展式逼近。于是很自然的一个想法是：为什么不用高次多项式来逼近呢？高次多项式确实是个不错的想法，可是有学过计算方法的同学大概都知道，多项式拟合的问题是在训练数据内拟合效果很好，可是测试效果不好，也就是容易出现过拟合的现象。那么，还有没有其他办法呢？有！那位神经网络的发表者说——用复合函数来拟合！
 
-
-
-## Transformer的理解
-
-### 1. seq2seq
-
-seq2seq有两个RNN组成，一个是encoder，一个是decoder，举一个翻译的例子：
-
-"我是女孩"，翻译"I am a girl"
-
-**输入序列：**X = (x_0, x_1, x_2, x_3)，x_0=我，x_1=是，x_2=女，x_3=孩
-
-**目标序列：** t = (t_0, t_1, t_2, t_3) = (I am a girl)
-
-通过encoder，把x=(x_0, x_1, x_2, x_3)映射为一个隐层状态h，再经由decoder将h映射为y=(y_0, y_1, y_2, y_3)(这里y向量长度可以发生变化，即与输入长度可以不同)，最后将y与t做loss(交叉熵)，训练网络
-
-### 2.Transformer
-
-Transformer是一个升级版的seq2seq，也是由一个encoder和一个decoder组成的，encoder对输入序列进行编码，即x变成h，decoder对h进行编码，得到y，但encoder和decoder都不用RNN，二是换成了多个attention。
-
-![](D:\vscode\bert-pics\transformer结构图.png)
-
-![](D:\vscode\bert-pics\草稿上的transformer.png)
-
-对上面的结构进行分开来看：
-
-1. 左边的结构是encoder、右边是decoder
-2. encoder、decoder的底部都是embedding，而embedding又分为两部分：input embedding和position embedding，Transformer抛弃了RNN，而RNN最大的优点就是在时间序列上对数据的抽象，所以文章中作者提出两种Positional Encoding的方法，将encoding后的数据与embedding数据求和，加入了相对位置信息。
-3. encoder、decoder的中部分是两个block，分别输入一个序列、输出一个序列，这两个block分别重复N次，encoder的每个block里有两个子网，分别是multihead attention和feedforward network(ffn)；decoder的block里有三个子网，分别是multihead attention和一个ffn。这些子网后面都跟了一个add&norm，即像resnet一样加一个。
-4. decoder最后还有一个linear和softmax。
-
-#### 2.1 Encoder
-
-encoder由6层相同的层组成，每一层由两部分组成；`multi-head、self-attention`和`position-wise、feed-forward network（是一个全连接层）`，两个部分都有一个残差链接(residual connection)，然后接着一个layer normalization。
-
-#### 2.2 Decoder
-
-decoder也是由6个相同的层组成，每一个层包括三个部分：`multi-head,self-attention, mechanism`和`multi-head,context-attention,mechanism`和`position-wise,feed-forward network`，和encoder一样，上面三个部分的每一个部分，都有一个残差连接，后接一个Layer Normalization。
-
-decoder和encoder不同的地方在multi-head context-attention mechanism
-
-#### 2.3 Attention
-
-attention可以简单理解成encoder层的输出经过加权平均后再输入到decoder层中，它主要应用在seq2seq模型中，这个加权可以用矩阵来表示，也叫attention矩阵，它表示对于某一个时刻的输出y，它扎起输入y上各个部分的注意力，这个注意力就是刚才所说的加权，Attention 又分为很多种，其中两种比较典型的有加性 Attention 和乘性 Attention。加性 Attention 对于输入的隐状态 h_t 和输出的隐状态 s_t 直接做 concat 操作，得到 [s_t; h_t] ，乘性 Attention 则是对输入和输出做 dot 操作。
-
-#### 2.4 Transformer评价
-
-1. 并行计算，提高训练速度
-   Transoformer用attention代替了原本的RNN，而RNN在训练的时候，当前的step的计算要依赖于上一个step的hidden state的，也就是说这是一个sequential procedure，即每次计算都要等之前的计算完成才能展开，而Transoformer不用RNN，所有的计算都可以并行计算，从而提高训练的速度
-2. 建立直接的长距离依赖
-   在Transoformer中，由于self attentionn的存在，任意两个word之间都有直接的交互，从而建立了直接的依赖，无论二者距离多远
 
 
 
@@ -674,6 +657,37 @@ attention可以简单理解成encoder层的输出经过加权平均后再输入�
 
 ---
 
+## 知识图谱
+
+**数据→信息→知识→洞见→智慧→影响力**
+
+基本概念：本体、实体、属性、关系
+
+区别点： 1.知识可推理；2.计算机看得懂。
+
+三元组：
+
+数据库：Neo4j
+
+知识图谱的构建方法：
+
+1. 本体定义
+2. 知识抽取
+3. 知识融合
+4. 知识存储
+5. 知识推理
+
+知识图谱项目开发流程：
+
+1. 知识建模
+2. 知识获取
+3. 知识融合
+4. 知识存储
+5. 知识计算
+6. 知识应用
+
+
+
 ## [文章分类存档](https://github.com/panyang/AINLP-Archive)
 
 [苏剑林博客](https://kexue.fm/category/Big-Data/31/)
@@ -681,6 +695,10 @@ attention可以简单理解成encoder层的输出经过加权平均后再输入�
 [Bert源代码解读](https://github.com/DA-southampton/Read_Bert_Code)
 
 [张俊林：BERT和Transformer到底学到了什么](https://baijiahao.baidu.com/s?id=1647838632229443719&wfr=spider&for=pc)
+
+### 中文分词/词性标注
+
+[结巴中文分词官方文档分析](https://www.cnblogs.com/baiboy/p/jieba1.html)
 
 ### 如何学习NLP和相关学习资源
 
@@ -779,10 +797,6 @@ BERT实战
 
 
 BERT之外
-
-
-
-###中文分词/词性标注
 
 
 
