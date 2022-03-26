@@ -700,6 +700,10 @@ BERT是截止至2018年10月的最新的的state of the art模型，通过预训
 
 [结巴中文分词官方文档分析](https://www.cnblogs.com/baiboy/p/jieba1.html)
 
+[通俗讲解viterbi算法](https://www.zhihu.com/question/20136144)
+
+
+
 ### 如何学习NLP和相关学习资源
 
 [根据NLP历史学习](https://www.jianshu.com/u/abfe703a00fe)
